@@ -1,0 +1,288 @@
+一、前言
+知道的越多不知道的就越多
+
+编程开发这条路上的知识是无穷无尽的，就像以前你敢说精通Java，到后来学到越来越多只想写了解Java，过了几年现在可能想说懂一点点Java。当视野和格局的扩大，会让我们越来越发现原来的看法是多么浅显，这就像站在地球看地球和站在宇宙看地球一样。但正因为胸怀和眼界的提升让我们有了更多的认识，也逐渐学会了更多的技能。虽然不知道的越来越多，但也因此给自己填充了更多的技术栈，让自己越来越强大。
+
+拒绝学习的惰性很可怕
+
+现在与以前不一样，资料多、途径广，在这中间夹杂的广告也非常多。这就让很多初学者很难找到自己要的知识，最后看到有人推荐相关学习资料立刻屏蔽、删除，但同时技术优秀的资料也不能让需要的人看见了。久而久之把更多的时间精力都放在游戏、娱乐、影音上，适当的放松是可以的，但往往沉迷以后就很难出来，因此需要做好一些可以让自己成长的计划，稍有克制。
+
+平衡好软件设计和实现成本的度°
+
+有时候一个软件的架构设计需要符合当前条件下的各项因素，往往不能因为心中想当然的有某个蓝图，就去开始执行。也许虽然你的设计是非常优秀的，但是放在当前环境下很难满足业务的时间要求，当一个业务的基本诉求不能满足后，就很难拉动市场。没有产品的DAU支撑，最后整个研发的项目也会因此停滞。但研发又不能一团乱麻的写代码，因此需要找好一个适合的度，比如可以搭建良好的地基，实现上可扩展。但在具体的功能上可以先简化实现，随着活下来了再继续完善迭代。
+
+二、开发环境
+JDK 1.8
+Idea + Maven
+涉及工程三个，可以通过关注公众号：bugstack虫洞栈，回复源码下载获取(打开获取的链接，找到序号18)
+工程	描述
+itstack-demo-design-18-00	场景模拟工程；模拟一个小客车摇号接口
+itstack-demo-design-18-01	使用一坨代码实现业务需求
+itstack-demo-design-18-02	通过设计模式优化改造代码，产生对比性从而学习
+三、观察者模式介绍
+观察者模式，图片来自 refactoringguru.cn
+
+简单来讲观察者🕵模式，就是当一个行为发生时传递信息给另外一个用户接收做出相应的处理，两者之间没有直接的耦合关联。例如；狙击手、李云龙。
+
+李云龙给你竖大拇指
+
+除了生活中的场景外，在我们编程开发中也会常用到一些观察者的模式或者组件，例如我们经常使用的MQ服务，虽然MQ服务是有一个通知中心并不是每一个类服务进行通知，但整体上也可以算作是观察者模式的思路设计。再比如可能有做过的一些类似事件监听总线，让主线服务与其他辅线业务服务分离，为了使系统降低耦合和增强扩展性，也会使用观察者模式进行处理。
+
+四、案例场景模拟
+场景模拟；小客车指标摇号通知场景
+
+在本案例中我们模拟每次小客车指标摇号事件通知场景(真实的不会由官网给你发消息)
+
+可能大部分人看到这个案例一定会想到自己每次摇号都不中的场景，收到一个遗憾的短信通知。当然目前的摇号系统并不会给你发短信，而是由百度或者一些其他插件发的短信。那么假如这个类似的摇号功能如果由你来开发，并且需要对外部的用户做一些事件通知以及需要在主流程外再添加一些额外的辅助流程时该如何处理呢？
+
+基本很多人对于这样的通知事件类的实现往往比较粗犷，直接在类里面就添加了。1是考虑🤔这可能不会怎么扩展，2是压根就没考虑😄过。但如果你有仔细思考过你的核心类功能会发现，这里面有一些核心主链路，还有一部分是辅助功能。比如完成了某个行为后需要触发MQ给外部，以及做一些消息PUSH给用户等，这些都不算做是核心流程链路，是可以通过事件通知的方式进行处理。
+
+那么接下来我们就使用这样的设计模式来优化重构此场景下的代码。
+
+1. 场景模拟工程
+   itstack-demo-design-18-00
+   └── src
+   └── main
+   └── java
+   └── org.itstack.demo.design
+   └── MinibusTargetService.java
+   这里提供的是一个模拟小客车摇号的服务接口。
+2. 场景简述
+   2.1 摇号服务接口
+   public class MinibusTargetService {
+
+   /**
+    * 模拟摇号，但不是摇号算法
+    *
+    * @param uId 用户编号
+    * @return 结果
+      */
+      public String lottery(String uId) {
+      return Math.abs(uId.hashCode()) % 2 == 0 ? "恭喜你，编码".concat(uId).concat("在本次摇号中签") : "很遗憾，编码".concat(uId).concat("在本次摇号未中签或摇号资格已过期");
+      }
+
+}
+非常简单的一个模拟摇号接口，与真实公平的摇号是有差别的。
+五、用一坨坨代码实现
+这里我们先使用最粗暴的方式来实现功能
+
+按照需求需要在原有的摇号接口中添加MQ消息发送以及短消息通知功能，如果是最直接的方式那么可以直接在方法中补充功能即可。
+
+1. 工程结构
+   itstack-demo-design-18-01
+   └── src
+   └── main
+   └── java
+   └── org.itstack.demo.design
+   ├── LotteryResult.java
+   ├── LotteryService.java
+   └── LotteryServiceImpl.java
+   这段代码接口中包括了三部分内容；返回对象(LotteryResult)、定义接口(LotteryService)、具体实现(LotteryServiceImpl)。
+2. 代码实现
+   public class LotteryServiceImpl implements LotteryService {
+
+   private Logger logger = LoggerFactory.getLogger(LotteryServiceImpl.class);
+
+   private MinibusTargetService minibusTargetService = new MinibusTargetService();
+
+   public LotteryResult doDraw(String uId) {
+   // 摇号
+   String lottery = minibusTargetService.lottery(uId);
+   // 发短信
+   logger.info("给用户 {} 发送短信通知(短信)：{}", uId, lottery);
+   // 发MQ消息
+   logger.info("记录用户 {} 摇号结果(MQ)：{}", uId, lottery);
+   // 结果
+   return new LotteryResult(uId, lottery, new Date());
+   }
+
+}
+从以上的方法实现中可以看到，整体过程包括三部分；摇号、发短信、发MQ消息，而这部分都是顺序调用的。
+除了摇号接口调用外，后面的两部分都是非核心主链路功能，而且会随着后续的业务需求发展而不断的调整和扩充，在这样的开发方式下就非常不利于维护。
+3. 测试验证
+   3.1 编写测试类
+   @Test
+   public void test() {
+   LotteryService lotteryService = new LotteryServiceImpl();
+   LotteryResult result = lotteryService.doDraw("2765789109876");
+   logger.info("测试结果：{}", JSON.toJSONString(result));
+   }
+   测试过程中提供对摇号服务接口的调用。
+   3.2 测试结果
+   22:02:24.520 [main] INFO  o.i.demo.design.LotteryServiceImpl - 给用户 2765789109876 发送短信通知(短信)：很遗憾，编码2765789109876在本次摇号未中签或摇号资格已过期
+   22:02:24.523 [main] INFO  o.i.demo.design.LotteryServiceImpl - 记录用户 2765789109876 摇号结果(MQ)：很遗憾，编码2765789109876在本次摇号未中签或摇号资格已过期
+   22:02:24.606 [main] INFO  org.itstack.demo.design.ApiTest - 测试结果：{"dateTime":1598764144524,"msg":"很遗憾，编码2765789109876在本次摇号未中签或摇号资格已过期","uId":"2765789109876"}
+
+Process finished with exit code 0
+从测试结果上是符合预期的，也是平常开发代码的方式，还是非常简单的。
+六、观察者模式重构代码
+接下来使用观察者模式来进行代码优化，也算是一次很小的重构。
+
+1. 工程结构
+   itstack-demo-design-18-02
+   └── src
+   └── main
+   └── java
+   └── org.itstack.demo.design
+   ├── event
+   │    ├── listener
+   │    │    ├── EventListener.java
+   │    │    ├── MessageEventListener.java
+   │    │    └── MQEventListener.java
+   │    └── EventManager.java
+   ├── LotteryResult.java
+   ├── LotteryService.java
+   └── LotteryServiceImpl.java
+   观察者模式模型结构
+
+观察者模式模型结构
+
+从上图可以分为三大块看；事件监听、事件处理、具体的业务流程，另外在业务流程中 LotteryService 定义的是抽象类，因为这样可以通过抽象类将事件功能屏蔽，外部业务流程开发者不需要知道具体的通知操作。
+右下角圆圈图表示的是核心流程与非核心流程的结构，一般在开发中会把主线流程开发完成后，再使用通知的方式处理辅助流程。他们可以是异步的，在MQ以及定时任务的处理下，保证最终一致性。
+2. 代码实现
+   2.1 事件监听接口定义
+   public interface EventListener {
+
+   void doEvent(LotteryResult result);
+
+}
+接口中定义了基本的事件类，这里如果方法的入参信息类型是变化的可以使用泛型<T>
+2.2 两个监听事件的实现
+短消息事件
+
+public class MessageEventListener implements EventListener {
+
+    private Logger logger = LoggerFactory.getLogger(MessageEventListener.class);
+
+    @Override
+    public void doEvent(LotteryResult result) {
+        logger.info("给用户 {} 发送短信通知(短信)：{}", result.getuId(), result.getMsg());
+    }
+
+}
+MQ发送事件
+
+public class MQEventListener implements EventListener {
+
+    private Logger logger = LoggerFactory.getLogger(MQEventListener.class);
+
+    @Override
+    public void doEvent(LotteryResult result) {
+        logger.info("记录用户 {} 摇号结果(MQ)：{}", result.getuId(), result.getMsg());
+    }
+
+}
+以上是两个事件的具体实现，相对来说都比较简单。如果是实际的业务开发那么会需要调用外部接口以及控制异常的处理。
+同时我们上面提到事件接口添加泛型，如果有需要那么在事件的实现中就可以按照不同的类型进行包装事件内容。
+2.3 事件处理类
+public class EventManager {
+
+    Map<Enum<EventType>, List<EventListener>> listeners = new HashMap<>();
+
+    public EventManager(Enum<EventType>... operations) {
+        for (Enum<EventType> operation : operations) {
+            this.listeners.put(operation, new ArrayList<>());
+        }
+    }
+
+    public enum EventType {
+        MQ, Message
+    }
+
+    /**
+     * 订阅
+     * @param eventType 事件类型
+     * @param listener  监听
+     */
+    public void subscribe(Enum<EventType> eventType, EventListener listener) {
+        List<EventListener> users = listeners.get(eventType);
+        users.add(listener);
+    }
+
+    /**
+     * 取消订阅
+     * @param eventType 事件类型
+     * @param listener  监听
+     */
+    public void unsubscribe(Enum<EventType> eventType, EventListener listener) {
+        List<EventListener> users = listeners.get(eventType);
+        users.remove(listener);
+    }
+
+    /**
+     * 通知
+     * @param eventType 事件类型
+     * @param result    结果
+     */
+    public void notify(Enum<EventType> eventType, LotteryResult result) {
+        List<EventListener> users = listeners.get(eventType);
+        for (EventListener listener : users) {
+            listener.doEvent(result);
+        }
+    }
+
+}
+整个处理的实现上提供了三个主要方法；订阅(subscribe)、取消订阅(unsubscribe)、通知(notify)。这三个方法分别用于对监听时间的添加和使用。
+另外因为事件有不同的类型，这里使用了枚举的方式进行处理，也方便让外部在规定下使用事件，而不至于乱传信息(EventType.MQ、EventType.Message)。
+2.4 业务抽象类接口
+public abstract class LotteryService {
+
+    private EventManager eventManager;
+
+    public LotteryService() {
+        eventManager = new EventManager(EventManager.EventType.MQ, EventManager.EventType.Message);
+        eventManager.subscribe(EventManager.EventType.MQ, new MQEventListener());
+        eventManager.subscribe(EventManager.EventType.Message, new MessageEventListener());
+    }
+
+    public LotteryResult draw(String uId) {
+        LotteryResult lotteryResult = doDraw(uId);
+        // 需要什么通知就给调用什么方法
+        eventManager.notify(EventManager.EventType.MQ, lotteryResult);
+        eventManager.notify(EventManager.EventType.Message, lotteryResult);
+        return lotteryResult;
+    }
+
+    protected abstract LotteryResult doDraw(String uId);
+
+}
+这种使用抽象类的方式定义实现方法，可以在方法中扩展需要的额外调用。并提供抽象类abstract LotteryResult doDraw(String uId)，让类的继承者实现。
+同时方法的定义使用的是protected，也就是保证将来外部的调用方不会调用到此方法，只有调用到draw(String uId)，才能让我们完成事件通知。
+此种方式的实现就是在抽象类中写好一个基本的方法，在方法中完成新增逻辑的同时，再增加抽象类的使用。而这个抽象类的定义会有继承者实现。
+另外在构造函数中提供了对事件的定义；eventManager.subscribe(EventManager.EventType.MQ, new MQEventListener())。
+在使用的时候也是使用枚举的方式进行通知使用，传了什么类型EventManager.EventType.MQ，就会执行什么事件通知，按需添加。
+2.5 业务接口实现类
+public class LotteryServiceImpl extends LotteryService {
+
+    private MinibusTargetService minibusTargetService = new MinibusTargetService();
+
+    @Override
+    protected LotteryResult doDraw(String uId) {
+        // 摇号
+        String lottery = minibusTargetService.lottery(uId);
+        // 结果
+        return new LotteryResult(uId, lottery, new Date());
+    }
+
+}
+现在再看业务流程的实现中可以看到已经非常简单了，没有额外的辅助流程，只有核心流程的处理。
+3. 测试验证
+   3.1 编写测试类
+   @Test
+   public void test() {
+   LotteryService lotteryService = new LotteryServiceImpl();
+   LotteryResult result = lotteryService.draw("2765789109876");
+   logger.info("测试结果：{}", JSON.toJSONString(result));
+   }
+   从调用上来看几乎没有区别，但是这样的实现方式就可以非常方便的维护代码以及扩展新的需求。
+   3.2 测试结果
+   23:56:07.597 [main] INFO  o.i.d.d.e.listener.MQEventListener - 记录用户 2765789109876 摇号结果(MQ)：很遗憾，编码2765789109876在本次摇号未中签或摇号资格已过期
+   23:56:07.600 [main] INFO  o.i.d.d.e.l.MessageEventListener - 给用户 2765789109876 发送短信通知(短信)：很遗憾，编码2765789109876在本次摇号未中签或摇号资格已过期
+   23:56:07.698 [main] INFO  org.itstack.demo.design.test.ApiTest - 测试结果：{"dateTime":1599737367591,"msg":"很遗憾，编码2765789109876在本次摇号未中签或摇号资格已过期","uId":"2765789109876"}
+
+Process finished with exit code 0
+从测试结果上看满足😌我们的预期，虽然结果是一样的，但只有我们知道了设计模式的魅力所在。
+七、总结
+从我们最基本的过程式开发以及后来使用观察者模式面向对象开发，可以看到设计模式改造后，拆分出了核心流程与辅助流程的代码。一般代码中的核心流程不会经常变化。但辅助流程会随着业务的各种变化而变化，包括；营销、裂变、促活等等，因此使用设计模式架设代码就显得非常有必要。
+此种设计模式从结构上是满足开闭原则的，当你需要新增其他的监听事件或者修改监听逻辑，是不需要改动事件处理类的。但是可能你不能控制调用顺序以及需要做一些事件结果的返回继续操作，所以使用的过程时需要考虑场景的合理性。
+任何一种设计模式有时候都不是单独使用的，需要结合其他模式共同建设。另外设计模式的使用是为了让代码更加易于扩展和维护，不能因为添加设计模式而把结构处理更加复杂以及难以维护。这样的合理使用的经验需要大量的实际操作练习而来。
