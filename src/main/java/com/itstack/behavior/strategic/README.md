@@ -230,11 +230,9 @@ public class Context<T> {
    logger.info("测试结果：直减优惠后金额 {}", discountAmount);
    }
    ````
-   测试结果
+测试结果：直减优惠后金额 90
 
-15:43:22.035 [main] INFO org.itstack.demo.design.test.ApiTest - 测试结果：直减优惠后金额 90
 
-Process finished with exit code 0
 
 3.2 编写测试类(满减优惠)
 
@@ -251,11 +249,9 @@ logger.info("测试结果：满减优惠后金额 {}", discountAmount);
 }
 ````
 
-测试结果
+测试结果：满减优惠后金额 90
 
-15:43:42.695 [main] INFO org.itstack.demo.design.test.ApiTest - 测试结果：满减优惠后金额 90
 
-Process finished with exit code 0
 
 3.3 编写测试类(折扣优惠)
 
@@ -269,11 +265,10 @@ logger.info("测试结果：折扣9折后金额 {}", discountAmount);
 }
 ````
 
-测试结果
 
-15:44:05.602 [main] INFO org.itstack.demo.design.test.ApiTest - 测试结果：折扣9折后金额 90.00
+测试结果：折扣9折后金额 90.00
 
-Process finished with exit code 0
+
 
 3.4 编写测试类(n元购优惠)
 
@@ -286,11 +281,11 @@ BigDecimal discountAmount = context.discountAmount(90D, new BigDecimal(100));
 logger.info("测试结果：n元购优惠后金额 {}", discountAmount);
 ````
 
-测试结果
 
-15:44:24.700 [main] INFO org.itstack.demo.design.test.ApiTest - 测试结果：n元购优惠后金额 90
 
-Process finished with exit code 0
+测试结果：n元购优惠后金额 90
+
+
 
 以上四组测试分别验证了不同类型优惠券的优惠策略，测试结果是满足我们的预期。 这里四种优惠券最终都是在原价100元上折扣10元，最终支付90元。 七、总结
 以上的策略模式案例相对来说不并不复杂，主要的逻辑都是体现在关于不同种类优惠券的计算折扣策略上。结构相对来说也比较简单，在实际的开发中这样的设计模式也是非常常用的。另外这样的设计与命令模式、适配器模式结构相似，但是思路是有差异的。
