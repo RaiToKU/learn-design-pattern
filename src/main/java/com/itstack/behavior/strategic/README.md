@@ -230,6 +230,9 @@ public class Context<T> {
 ````
 策略模式的控制类主要是外部可以传递不同的策略实现，在通过统一的方法执行优惠策略计算。
 另外这里也可以包装成map结构，让外部只需要对应的泛型类型即可使用相应的服务。
+
+
+
 3. 测试验证
    3.1 编写测试类(直减优惠)
    ````
@@ -245,6 +248,7 @@ public class Context<T> {
 15:43:22.035 [main] INFO  org.itstack.demo.design.test.ApiTest - 测试结果：直减优惠后金额 90
 
 Process finished with exit code 0
+````
 
 
 
@@ -266,6 +270,8 @@ logger.info("测试结果：满减优惠后金额 {}", discountAmount);
 
 Process finished with exit code 0
 ````
+
+
 3.3 编写测试类(折扣优惠)
 ````
 @Test
