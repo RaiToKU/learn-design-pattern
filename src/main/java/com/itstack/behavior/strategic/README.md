@@ -14,12 +14,8 @@
 二、开发环境
 JDK 1.8
 Idea + Maven
-涉及工程三个，可以通过关注公众号：bugstack虫洞栈，回复源码下载获取(打开获取的链接，找到序号18)
-工程	描述
-itstack-demo-design-20-01	使用一坨代码实现业务需求
-itstack-demo-design-20-02	通过设计模式优化改造代码，产生对比性从而学习
+
 三、策略模式介绍
-策略模式，图片来自 refactoringguru.cn
 
 策略模式是一种行为模式，也是替代大量ifelse的利器。它所能帮你解决的是场景，一般是具有同类可替代的行为逻辑算法场景。比如；不同类型的交易方式(信用卡、支付宝、微信)、生成唯一ID策略(UUID、DB自增、DB+Redis、雪花算法、Leaf算法)等，都可以使用策略模式进行行为包装，供给外部使用。
 
@@ -45,14 +41,18 @@ itstack-demo-design-20-02	通过设计模式优化改造代码，产生对比性
 对于优惠券的设计最初可能非常简单，就是一个金额的抵扣，也没有现在这么多种类型。所以如果没有这样场景的经验话，往往设计上也是非常简单的。但随着产品功能的不断迭代，如果程序最初设计的不具备很好的扩展性，那么往后就会越来越混乱。
 
 1. 工程结构
+   ````
    itstack-demo-design-20-01
    └── src
    └── main
    └── java
    └── org.itstack.demo.design
    └── CouponDiscountService.java
-   一坨坨工程的结构很简单，也是最直接的面向过程开发方式。
+   ```
+   //一坨坨工程的结构很简单，也是最直接的面向过程开发方式。
 2. 代码实现
+   
+````
    /**
 * 博客：https://bugstack.cn - 沉淀、分享、成长，让自己和他人都能有所收获！
 * 公众号：bugstack虫洞栈
@@ -89,6 +89,7 @@ return 0D;
 }
 
 }
+````
 以上是不同类型的优惠券计算折扣后的实际金额。
 入参包括；优惠券类型、优惠券金额、商品金额，因为有些优惠券是满多少减少多少，所以增加了typeExt类型。这也是方法的不好扩展性问题。
 最后是整个的方法体中对优惠券抵扣金额的实现，最开始可能是一个最简单的优惠券，后面随着产品功能的增加，不断的扩展if语句。实际的代码可能要比这个多很多。
@@ -98,6 +99,7 @@ return 0D;
 与上面面向流程式的开发这里会使用设计模式，优惠代码结构，增强整体的扩展性。
 
 1. 工程结构
+   ````
    itstack-demo-design-20-02
    └── src
    └── main
@@ -110,6 +112,9 @@ return 0D;
    │    └── ZKCouponDiscount.java
    ├── Context.java
    └── ICouponDiscount.java
+   ````
+   
+   
    策略模式模型结构
 
 策略模式模型结构
@@ -119,6 +124,7 @@ return 0D;
 最后提供了策略模式的上下控制类处理，整体的策略服务。
 2. 代码实现
    2.1 优惠券接口
+   ````
    public interface ICouponDiscount<T> {
 
    /**
@@ -130,12 +136,13 @@ return 0D;
       BigDecimal discountAmount(T couponInfo, BigDecimal skuPrice);
 
 }
+````
 
 定义了优惠券折扣接口，也增加了泛型用于不同类型的接口可以传递不同的类型参数。
 接口中包括商品金额以及出参返回最终折扣后的金额，这里在实际开发中会比现在的接口参数多一些，但核心逻辑是这些。
 2.2 优惠券接口实现
 满减
-
+```
 public class MJCouponDiscount implements ICouponDiscount<Map<String,String>>  {
 
     /**
@@ -203,8 +210,10 @@ public class NYGCouponDiscount implements ICouponDiscount<Double> {
     }
 
 }
+````
 以上是四种不同类型的优惠券计算折扣金额的策略方式，可以从代码中看到每一种优惠方式的优惠金额。
 2.3 策略控制类
+````
 public class Context<T> {
 
     private ICouponDiscount<T> couponDiscount;
@@ -218,10 +227,12 @@ public class Context<T> {
     }
 
 }
+````
 策略模式的控制类主要是外部可以传递不同的策略实现，在通过统一的方法执行优惠策略计算。
 另外这里也可以包装成map结构，让外部只需要对应的泛型类型即可使用相应的服务。
 3. 测试验证
    3.1 编写测试类(直减优惠)
+   ````
    @Test
    public void test_zj() {
    // 直减；100-10，商品100元
@@ -234,7 +245,11 @@ public class Context<T> {
 15:43:22.035 [main] INFO  org.itstack.demo.design.test.ApiTest - 测试结果：直减优惠后金额 90
 
 Process finished with exit code 0
+
+
+
 3.2 编写测试类(满减优惠)
+````
 @Test
 public void test_mj() {
 // 满100减10，商品100元
@@ -250,7 +265,9 @@ logger.info("测试结果：满减优惠后金额 {}", discountAmount);
 15:43:42.695 [main] INFO  org.itstack.demo.design.test.ApiTest - 测试结果：满减优惠后金额 90
 
 Process finished with exit code 0
+````
 3.3 编写测试类(折扣优惠)
+````
 @Test
 public void test_zk() {
 // 折扣9折，商品100元
@@ -263,7 +280,9 @@ logger.info("测试结果：折扣9折后金额 {}", discountAmount);
 15:44:05.602 [main] INFO  org.itstack.demo.design.test.ApiTest - 测试结果：折扣9折后金额 90.00
 
 Process finished with exit code 0
+````
 3.4 编写测试类(n元购优惠)
+````
 @Test
 public void test_nyg() {
 // n元购；100-10，商品100元
@@ -276,6 +295,7 @@ logger.info("测试结果：n元购优惠后金额 {}", discountAmount);
 15:44:24.700 [main] INFO  org.itstack.demo.design.test.ApiTest - 测试结果：n元购优惠后金额 90
 
 Process finished with exit code 0
+````
 以上四组测试分别验证了不同类型优惠券的优惠策略，测试结果是满足我们的预期。
 这里四种优惠券最终都是在原价100元上折扣10元，最终支付90元。
 七、总结
